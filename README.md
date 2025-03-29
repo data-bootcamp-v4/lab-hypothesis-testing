@@ -11,7 +11,7 @@
 
   Upon completion of this exercise, you will be able to:
   
-  - Different kinds of hypothesis testing, such one sample, paired samples, and more
+  - Perform different kinds of hypothesis testing, such one sample, paired samples, and more
 
   
   <br>
