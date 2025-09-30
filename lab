@@ -1,0 +1,104 @@
+# Lab | Hypothesis Testing
+**Objective**
+
+Welcome to the Hypothesis Testing Lab, where we embark on an enlightening journey through the realm of statistical decision-making! In this laboratory, we delve into various scenarios, applying the powerful tools of hypothesis testing to scrutinize and interpret data.
+
+From testing the mean of a single sample (One Sample T-Test), to investigating differences between independent groups (Two Sample T-Test), and exploring relationships within dependent samples (Paired Sample T-Test), our exploration knows no bounds. Furthermore, we'll venture into the realm of Analysis of Variance (ANOVA), unraveling the complexities of comparing means across multiple groups.
+
+So, grab your statistical tools, prepare your hypotheses, and let's embark on this fascinating journey of exploration and discovery in the world of hypothesis testing!
+**Challenge 1**
+In this challenge, we will be working with pokemon data. The data can be found here:
+
+- https://raw.githubusercontent.com/data-bootcamp-v4/data/main/pokemon.csv
+#libraries
+import pandas as pd
+import scipy.stats as st
+import numpy as np
+
+
+df = pd.read_csv("https://raw.githubusercontent.com/data-bootcamp-v4/data/main/pokemon.csv")
+df
+- We posit that Pokemons of type Dragon have, on average, more HP stats than Grass. Choose the propper test and, with 5% significance, comment your findings.
+df["Type 1"].unique()
+df_dragon = df[df["Type 1"]=="Dragon"]["HP"]
+df_grass = df[df["Type 1"]=="Grass"]["HP"]
+#set the hypothesis
+
+#H0: mu_hp dragon >= mu_hp grass
+#H1: mu_hp dragon < mu_hp grass
+
+#significance level = 0.05
+st.ttest_ind(df_dragon,df_grass,equal_var=False)
+#There is a significant difference between the two types and the p-value is < 0.05 so the null hypothesis is rejected.
+- We posit that Legendary Pokemons have different stats (HP, Attack, Defense, Sp.Atk, Sp.Def, Speed) when comparing with Non-Legendary. Choose the propper test and, with 5% significance, comment your findings.
+
+st_cols = ['HP', 'Attack', 'Defense', 'Sp. Atk', 'Sp. Def', 'Speed']
+df_clean = df[['Legendary'] + st_cols].dropna()
+
+results = []
+
+for stat in st_cols:
+    # Split stat values by Legendary status
+    legendary = df_clean[df_clean['Legendary'] == True][stat]
+    non_legendary = df_clean[df_clean['Legendary'] == False][stat]
+
+    # Perform one-way ANOVA
+    f_stat, p_value = st.f_oneway(legendary, non_legendary)
+
+    results.append({
+        'Stat': st,
+        'F-statistic': round(f_stat, 3),
+        'p-value': round(p_value, 4),
+        'Significant (p < 0.05)': p_value < 0.05
+    })
+anova_df = pd.DataFrame(results)
+print(anova_df)
+**Challenge 2**
+In this challenge, we will be working with california-housing data. The data can be found here:
+- https://raw.githubusercontent.com/data-bootcamp-v4/data/main/california_housing.csv
+df = pd.read_csv("https://raw.githubusercontent.com/data-bootcamp-v4/data/main/california_housing.csv")
+df.head()
+**We posit that houses close to either a school or a hospital are more expensive.**
+
+- School coordinates (-118, 34)
+- Hospital coordinates (-122, 37)
+
+We consider a house (neighborhood) to be close to a school or hospital if the distance is lower than 0.50.
+
+Hint:
+- Write a function to calculate euclidean distance from each house (neighborhood) to the school and to the hospital.
+- Divide your dataset into houses close and far from either a hospital or school.
+- Choose the propper test and, with 5% significance, comment your findings.
+ 
+def euclidean_distance(lat1, lon1, lat2, lon2):
+    return np.sqrt((lat1 - lat2)**2 + (lon1 - lon2)**2)
+school_lat, school_lon = 34, -118
+hospital_lat, hospital_lon = 37, -122
+
+df['distance_to_school'] = euclidean_distance(df['latitude'], df['longitude'], school_lat, school_lon)
+df['distance_to_hospital'] = euclidean_distance(df['latitude'], df['longitude'], hospital_lat, hospital_lon)
+# Close if within 0.50 units to either location
+df['is_close'] = (df['distance_to_school'] < 0.5) | (df['distance_to_hospital'] < 0.5)
+
+# Count how many are close vs far
+print(df['is_close'].value_counts())
+# Separate groups
+close_group = df[df['is_close']]['median_house_value']
+far_group = df[~df['is_close']]['median_house_value']
+
+t_stat, p_value = st.ttest_ind(close_group, far_group, equal_var=False)
+
+print(f"T-test statistic: {t_stat:.3f}")
+print(f"P-value: {p_value:.5f}")
+if p_value < 0.05:
+    print("Statistically significant: Houses close to school/hospital are priced differently.")
+else:
+    print("❌ No significant difference in prices between close and far houses.")
+import matplotlib.pyplot as plt
+import seaborn as sns
+sns.boxplot(x='is_close', y='median_house_value', data=df)
+plt.xticks([0, 1], ['Far', 'Close'])
+plt.title('House Value: Close vs Far from School/Hospital')
+plt.ylabel('Median House Value')
+plt.xlabel('Proximity (Close/Far)')
+plt.show()
